@@ -7,8 +7,8 @@ branding:
 
 inputs:
   packages:
-    description: 'Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2).'
-    required: true
+    description: 'Space delimited list of packages to install. Version can be specified optionally using APT command syntax of <name>=<version> (e.g. xdot=1.2-2). If not provided, packages will be read from Aptfile at repository root if it exists.'
+    required: false
     default: ''
   version:
     description: 'Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.'
