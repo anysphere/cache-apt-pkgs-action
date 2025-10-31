@@ -39,6 +39,10 @@ inputs:
     description: 'Space delimited list of repositories to add via apt-add-repository before installing packages. Supports PPA (ppa:user/repo) and other repository formats.'
     required: false
     default: ''
+  use_aptfile:
+    description: 'Whether to read packages from Aptfile at repository root. Set to false to disable Aptfile usage even if Aptfile exists.'
+    required: false
+    default: 'true'
 
 outputs:
   cache-hit:
@@ -64,6 +68,7 @@ runs:
           "$EXEC_INSTALL_SCRIPTS" \
           "$DEBUG" \
           "$ADD_REPOSITORY" \
+          "$USE_APTFILE" \
           "$PACKAGES"
         if [ -f ~/cache-apt-pkgs/cache_key.md5 ]; then
           echo "CACHE_KEY=$(cat ~/cache-apt-pkgs/cache_key.md5)" >> $GITHUB_ENV
@@ -77,6 +82,7 @@ runs:
          EMPTY_PACKAGES_BEHAVIOR: "${{ inputs.empty_packages_behavior }}"
          DEBUG: "${{ inputs.debug }}"
          ADD_REPOSITORY: "${{ inputs.add-repository }}"
+         USE_APTFILE: "${{ inputs.use_aptfile }}"
          PACKAGES: "${{ inputs.packages }}"
 
     - id: load-cache

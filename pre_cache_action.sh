@@ -27,24 +27,32 @@ debug="${4}"
 # Repositories to add before installing packages.
 add_repository="${5}"
 
+# Whether to use Aptfile
+use_aptfile="${6}"
+validate_bool "${use_aptfile}" use_aptfile 5
+
 # List of the packages to use.
-input_packages="${@:6}"
+input_packages="${@:7}"
 
 # Check for Aptfile at repository root and merge with input packages
 aptfile_path="${GITHUB_WORKSPACE:-.}/Aptfile"
 aptfile_packages=""
-if test -n "${GITHUB_WORKSPACE}" && test -f "${aptfile_path}"; then
-  log "Found Aptfile at ${aptfile_path}, parsing packages..."
-  aptfile_packages="$(parse_aptfile "${aptfile_path}")"
-  if test -n "${aptfile_packages}"; then
-    log "Parsed $(echo "${aptfile_packages}" | wc -w) package(s) from Aptfile"
+if test "${use_aptfile}" = "true"; then
+  if test -n "${GITHUB_WORKSPACE}" && test -f "${aptfile_path}"; then
+    log "Found Aptfile at ${aptfile_path}, parsing packages..."
+    aptfile_packages="$(parse_aptfile "${aptfile_path}")"
+    if test -n "${aptfile_packages}"; then
+      log "Parsed $(echo "${aptfile_packages}" | wc -w) package(s) from Aptfile"
+    else
+      log "Aptfile is empty or contains only comments"
+    fi
+  elif test -z "${GITHUB_WORKSPACE}"; then
+    log "GITHUB_WORKSPACE not set, skipping Aptfile check"
   else
-    log "Aptfile is empty or contains only comments"
+    log "No Aptfile found at ${aptfile_path}"
   fi
-elif test -z "${GITHUB_WORKSPACE}"; then
-  log "GITHUB_WORKSPACE not set, skipping Aptfile check"
 else
-  log "No Aptfile found at ${aptfile_path}"
+  log "Aptfile usage is disabled (use_aptfile=false)"
 fi
 
 # Merge input packages with Aptfile packages
