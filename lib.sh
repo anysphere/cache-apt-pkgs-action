@@ -158,6 +158,31 @@ function validate_bool {
 }
 
 ###############################################################################
+# Parses an Aptfile and extracts package names.
+# Arguments:
+#   File path to the Aptfile.
+# Returns:
+#   Space delimited list of package names (comments and empty lines removed).
+###############################################################################
+function parse_aptfile {
+  local aptfile_path="${1}"
+  if test ! -f "${aptfile_path}"; then
+    echo ""
+    return
+  fi
+
+  # Remove lines starting with #, remove inline comments (everything after #),
+  # trim whitespace, remove empty lines, and join with spaces
+  grep -v '^[[:space:]]*#' "${aptfile_path}" \
+    | sed 's/#.*$//' \
+    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+    | grep -v '^$' \
+    | tr '\n' ' ' \
+    | sed 's/[[:space:]]\+/ /g' \
+    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+}
+
+###############################################################################
 # Writes the manifest to a specified file.
 # Arguments:
 #   Type of manifest being written.
