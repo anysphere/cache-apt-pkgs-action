@@ -196,8 +196,12 @@ function write_manifest {
     log "Skipped ${1} manifest write. No packages to install."
   else
     log "Writing ${1} packages manifest to ${3}..."
-    # 0:-1 to remove trailing comma, delimit by newline and sort.
-    echo "${2:0:-1}" | tr ',' '\n' | sort > ${3}
+    # Remove trailing comma if present, delimit by newline and sort.
+    local content="${2}"
+    if [ ${#content} -gt 0 ] && [ "${content: -1}" = "," ]; then
+      content="${content:0:-1}"
+    fi
+    echo "${content}" | tr ',' '\n' | sort > "${3}"
     log "done"
   fi
 }

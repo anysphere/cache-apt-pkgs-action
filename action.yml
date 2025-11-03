@@ -42,7 +42,7 @@ inputs:
   use_aptfile:
     description: 'Whether to read packages from Aptfile at repository root. Set to false to disable Aptfile usage even if Aptfile exists.'
     required: false
-    default: 'true'
+    default: 'false'
 
 outputs:
   cache-hit:

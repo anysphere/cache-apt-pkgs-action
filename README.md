@@ -37,7 +37,7 @@ There are three kinds of version labels you can use.
 - `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 - `empty_packages_behavior` - Desired behavior when the given `packages` is empty. `'error'` (default), `'warn'` or `'ignore'`.
 - `add-repository` - Space delimited list of repositories to add via `apt-add-repository` before installing packages. Supports PPA (e.g., `ppa:user/repo`) and other repository formats.
-- `use_aptfile` - Whether to read packages from `Aptfile` at repository root. Set to `false` to disable Aptfile usage even if `Aptfile` exists. Default is `true`.
+- `use_aptfile` - Whether to read packages from `Aptfile` at repository root. Set to `true` to enable Aptfile usage if `Aptfile` exists. Default is `false`.
 
 ### Outputs
 
@@ -124,7 +124,7 @@ install_from_multiple_repos:
 
 ### Using Aptfile
 
-You can also use an `Aptfile` at your repository root to specify packages. The action will automatically read and cache packages from the `Aptfile` if it exists. Comments (lines starting with `#`) and inline comments are supported.
+You can use an `Aptfile` at your repository root to specify packages. To enable Aptfile reading, set `use_aptfile` to `true`. Comments (lines starting with `#`) and inline comments are supported.
 
 **Example Aptfile:**
 ```
@@ -152,6 +152,7 @@ jobs:
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           version: v1
+          use_aptfile: true  # Enable Aptfile reading
           # packages input can be omitted if using Aptfile only
       - name: Build
         run: make
@@ -162,12 +163,13 @@ You can also combine packages from both the input and `Aptfile`:
 - uses: awalsh128/cache-apt-pkgs-action@latest
   with:
     version: v1
+    use_aptfile: true  # Enable Aptfile reading
     packages: protobuf-compiler sd  # Additional packages beyond Aptfile
 ```
 
 ### Disabling Aptfile Usage
 
-If you want to disable Aptfile reading even when an `Aptfile` exists in your repository, set `use_aptfile` to `false`:
+By default, Aptfile reading is disabled (`use_aptfile: false`). If you want to explicitly disable it or ensure it stays disabled, you can set `use_aptfile` to `false`:
 
 ```yaml
 - uses: awalsh128/cache-apt-pkgs-action@latest
