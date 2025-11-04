@@ -106,6 +106,12 @@ fi
 
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
+# Ensure apt database is updated before calling apt_query (which uses apt-cache)
+if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mmin -5 2>/dev/null)" ]]; then
+  log "Updating APT package list for normalization..."
+  sudo apt-get update -qq > /dev/null 2>&1
+  log "done"
+fi
 packages="$(get_normalized_package_list "${combined_packages}")"
 log "normalized packages: '${packages}'"
 
