@@ -20,23 +20,10 @@ jobs:
 
       - name: Build and test go binaries
         run: | #shell
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.2
+          $(go env GOPATH)/bin/golangci-lint run
           go build -v ./...
           go test -v ./...
-
-      - name: Lint (external action)
-        if: vars.USE_LOCAL_LINTER != 'true'
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.52.2
-
-      - name: Lint (local)
-        if: vars.USE_LOCAL_LINTER == 'true'
-        run: | #shell
-          # Install golangci-lint
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.2
-          
-          # Run linter
-          $(go env GOPATH)/bin/golangci-lint run
 
       - name: Build apt_query binaries
         run: | #shell
