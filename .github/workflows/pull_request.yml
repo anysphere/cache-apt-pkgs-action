@@ -2,6 +2,7 @@ name: Pull Request
 on:
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch:  # Allow manual triggering for testing
 
 permissions:
   contents: read
