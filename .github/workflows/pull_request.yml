@@ -9,6 +9,10 @@ permissions:
 jobs:
   integrate:
     runs-on: ubuntu-latest
+      env:
+        CACHE_VERSION_PACKAGES: test-pr-${{ github.run_number }}
+        CACHE_VERSION_APTFILE: test-pr-aptfile-${{ github.run_number }}
+        CACHE_VERSION_MERGE: test-pr-merge-${{ github.run_number }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,36 +42,72 @@ jobs:
           ./apt_query-x86 normalized-list curl wget || echo "Binary failed, checking output..."
           ./apt_query-x86 normalized-list curl wget 2>&1 || true
 
-      - name: Test action
-        id: test-action
+        - name: Test action (warm cache)
+          id: test-action-warm
         uses: ./
         with:
           packages: curl wget
-          version: test-pr-${{ github.run_number }}
+            version: ${{ env.CACHE_VERSION_PACKAGES }}
           debug: 'true'
 
-      - name: Verify action outputs
+        - name: Verify action outputs (warm run)
         run: | #shell
-          echo "Cache hit: ${{ steps.test-action.outputs.cache-hit }}"
-          echo "Package version list: ${{ steps.test-action.outputs.package-version-list }}"
-          echo "All package version list: ${{ steps.test-action.outputs.all-package-version-list }}"
+            echo "Cache hit: ${{ steps.test-action-warm.outputs.cache-hit }}"
+            echo "Package version list: ${{ steps.test-action-warm.outputs.package-version-list }}"
+            echo "All package version list: ${{ steps.test-action-warm.outputs.all-package-version-list }}"
           
           # Verify outputs are set (even if cache-hit is false on first run)
-          if [ -z "${{ steps.test-action.outputs.package-version-list }}" ]; then
+            if [ -z "${{ steps.test-action-warm.outputs.package-version-list }}" ]; then
             echo "❌ ERROR: package-version-list output is empty"
             exit 1
           fi
           
           # Verify packages are in the output
-          if ! echo "${{ steps.test-action.outputs.package-version-list }}" | grep -q "curl"; then
+            if ! echo "${{ steps.test-action-warm.outputs.package-version-list }}" | grep -q "curl"; then
             echo "⚠️  WARNING: curl not found in package-version-list"
           fi
           
-          if ! echo "${{ steps.test-action.outputs.package-version-list }}" | grep -q "wget"; then
+            if ! echo "${{ steps.test-action-warm.outputs.package-version-list }}" | grep -q "wget"; then
             echo "⚠️  WARNING: wget not found in package-version-list"
           fi
           
           echo "✅ Action outputs verified successfully"
+
+        - name: Test action (cache validation)
+          id: test-action-cache
+          uses: ./
+          with:
+            packages: curl wget
+            version: ${{ env.CACHE_VERSION_PACKAGES }}
+            debug: 'true'
+
+        - name: Verify cached action outputs
+          run: | #shell
+            echo "Cache hit: ${{ steps.test-action-cache.outputs.cache-hit }}"
+            echo "Package version list: ${{ steps.test-action-cache.outputs.package-version-list }}"
+            echo "All package version list: ${{ steps.test-action-cache.outputs.all-package-version-list }}"
+
+            if [ "${{ steps.test-action-cache.outputs.cache-hit }}" != 'true' ]; then
+              echo "❌ ERROR: cache-hit output was not true on repeat run"
+              exit 1
+            fi
+
+            if [ -z "${{ steps.test-action-cache.outputs.package-version-list }}" ]; then
+              echo "❌ ERROR: package-version-list output is empty"
+              exit 1
+            fi
+
+            if ! echo "${{ steps.test-action-cache.outputs.package-version-list }}" | grep -q "curl"; then
+              echo "❌ ERROR: curl not found in package-version-list on cache validation run"
+              exit 1
+            fi
+
+            if ! echo "${{ steps.test-action-cache.outputs.package-version-list }}" | grep -q "wget"; then
+              echo "❌ ERROR: wget not found in package-version-list on cache validation run"
+              exit 1
+            fi
+
+            echo "✅ Action cache reuse verified successfully"
 
       - name: Create Aptfile for testing
         run: | 
@@ -81,28 +121,28 @@ jobs:
           echo "Created Aptfile with contents:"
           cat Aptfile
 
-      - name: Test action with Aptfile
-        id: test-action-aptfile
+        - name: Test action with Aptfile (warm cache)
+          id: test-action-aptfile-warm
         uses: ./
         with:
           use_aptfile: 'true'
-          version: test-pr-aptfile-${{ github.run_number }}
+            version: ${{ env.CACHE_VERSION_APTFILE }}
           debug: 'true'
 
-      - name: Verify Aptfile functionality
+        - name: Verify Aptfile functionality (warm run)
         run: | #shell
-          echo "Cache hit: ${{ steps.test-action-aptfile.outputs.cache-hit }}"
-          echo "Package version list: ${{ steps.test-action-aptfile.outputs.package-version-list }}"
-          echo "All package version list: ${{ steps.test-action-aptfile.outputs.all-package-version-list }}"
+            echo "Cache hit: ${{ steps.test-action-aptfile-warm.outputs.cache-hit }}"
+            echo "Package version list: ${{ steps.test-action-aptfile-warm.outputs.package-version-list }}"
+            echo "All package version list: ${{ steps.test-action-aptfile-warm.outputs.all-package-version-list }}"
           
           # Verify outputs are set
-          if [ -z "${{ steps.test-action-aptfile.outputs.package-version-list }}" ]; then
+            if [ -z "${{ steps.test-action-aptfile-warm.outputs.package-version-list }}" ]; then
             echo "❌ ERROR: package-version-list output is empty"
             exit 1
           fi
           
           # Verify packages from Aptfile are in the output (format is package=version, comma-separated)
-          package_list="${{ steps.test-action-aptfile.outputs.package-version-list }}"
+            package_list="${{ steps.test-action-aptfile-warm.outputs.package-version-list }}"
           if ! echo "${package_list}" | grep -qE "(^|,)git="; then
             echo "❌ ERROR: git not found in package-version-list (from Aptfile)"
             echo "Package list: ${package_list}"
@@ -123,28 +163,73 @@ jobs:
           
           echo "✅ Aptfile functionality verified successfully"
 
-      - name: Test action with Aptfile and packages input (merge)
-        id: test-action-merge
+        - name: Test action with Aptfile (cache validation)
+          id: test-action-aptfile-cache
+          uses: ./
+          with:
+            use_aptfile: 'true'
+            version: ${{ env.CACHE_VERSION_APTFILE }}
+            debug: 'true'
+
+        - name: Verify Aptfile cache reuse
+          run: | #shell
+            echo "Cache hit: ${{ steps.test-action-aptfile-cache.outputs.cache-hit }}"
+            echo "Package version list: ${{ steps.test-action-aptfile-cache.outputs.package-version-list }}"
+            echo "All package version list: ${{ steps.test-action-aptfile-cache.outputs.all-package-version-list }}"
+
+            if [ "${{ steps.test-action-aptfile-cache.outputs.cache-hit }}" != 'true' ]; then
+              echo "❌ ERROR: cache-hit output was not true on Aptfile repeat run"
+              exit 1
+            fi
+
+            if [ -z "${{ steps.test-action-aptfile-cache.outputs.package-version-list }}" ]; then
+              echo "❌ ERROR: package-version-list output is empty"
+              exit 1
+            fi
+
+            package_list="${{ steps.test-action-aptfile-cache.outputs.package-version-list }}"
+            if ! echo "${package_list}" | grep -qE "(^|,)git="; then
+              echo "❌ ERROR: git not found in package-version-list (from Aptfile cache run)"
+              echo "Package list: ${package_list}"
+              exit 1
+            fi
+
+            if ! echo "${package_list}" | grep -qE "(^|,)ca-certificates="; then
+              echo "❌ ERROR: ca-certificates not found in package-version-list (from Aptfile cache run)"
+              echo "Package list: ${package_list}"
+              exit 1
+            fi
+
+            if ! echo "${package_list}" | grep -qE "(^|,)gnupg="; then
+              echo "❌ ERROR: gnupg not found in package-version-list (from Aptfile cache run)"
+              echo "Package list: ${package_list}"
+              exit 1
+            fi
+
+            echo "✅ Aptfile cache reuse verified successfully"
+
+        - name: Test action with Aptfile and packages input (warm cache)
+          id: test-action-merge-warm
         uses: ./
         with:
           packages: curl
           use_aptfile: 'true'
-          version: test-pr-merge-${{ github.run_number }}
+            version: ${{ env.CACHE_VERSION_MERGE }}
           debug: 'true'
 
-      - name: Verify Aptfile and packages merge
+        - name: Verify Aptfile and packages merge (warm run)
         run: | #shell
-          echo "Cache hit: ${{ steps.test-action-merge.outputs.cache-hit }}"
-          echo "Package version list: ${{ steps.test-action-merge.outputs.package-version-list }}"
+            echo "Cache hit: ${{ steps.test-action-merge-warm.outputs.cache-hit }}"
+            echo "Package version list: ${{ steps.test-action-merge-warm.outputs.package-version-list }}"
           
           # Verify outputs are set
-          if [ -z "${{ steps.test-action-merge.outputs.package-version-list }}" ]; then
+            if [ -z "${{ steps.test-action-merge-warm.outputs.package-version-list }}" ]; then
             echo "❌ ERROR: package-version-list output is empty"
             exit 1
           fi
           
           # Verify packages from both sources are in the output (format is package=version, comma-separated)
-          package_list="${{ steps.test-action-merge.outputs.package-version-list }}"
+            package_list="${{ steps.test-action-merge-warm.outputs.package-version-list }}"
           if ! echo "${package_list}" | grep -qE "(^|,)curl="; then
             echo "❌ ERROR: curl not found in package-version-list (from packages input)"
             echo "Package list: ${package_list}"
@@ -158,6 +243,45 @@ jobs:
           fi
           
           echo "✅ Aptfile and packages merge verified successfully"
+
+        - name: Test action with Aptfile and packages input (cache validation)
+          id: test-action-merge-cache
+          uses: ./
+          with:
+            packages: curl
+            use_aptfile: 'true'
+            version: ${{ env.CACHE_VERSION_MERGE }}
+            debug: 'true'
+
+        - name: Verify Aptfile and packages merge cache reuse
+          run: | #shell
+            echo "Cache hit: ${{ steps.test-action-merge-cache.outputs.cache-hit }}"
+            echo "Package version list: ${{ steps.test-action-merge-cache.outputs.package-version-list }}"
+
+            if [ "${{ steps.test-action-merge-cache.outputs.cache-hit }}" != 'true' ]; then
+              echo "❌ ERROR: cache-hit output was not true on merge repeat run"
+              exit 1
+            fi
+
+            if [ -z "${{ steps.test-action-merge-cache.outputs.package-version-list }}" ]; then
+              echo "❌ ERROR: package-version-list output is empty"
+              exit 1
+            fi
+
+            package_list="${{ steps.test-action-merge-cache.outputs.package-version-list }}"
+            if ! echo "${package_list}" | grep -qE "(^|,)curl="; then
+              echo "❌ ERROR: curl not found in package-version-list (from packages input on cache run)"
+              echo "Package list: ${package_list}"
+              exit 1
+            fi
+
+            if ! echo "${package_list}" | grep -qE "(^|,)git="; then
+              echo "❌ ERROR: git not found in package-version-list (from Aptfile on cache run)"
+              echo "Package list: ${package_list}"
+              exit 1
+            fi
+
+            echo "✅ Aptfile and packages merge cache reuse verified successfully"
 
       - name: Cleanup Aptfile
         if: always()
