@@ -29,9 +29,12 @@ jobs:
       #   with:
       #     version: v1.52.2
 
-      - name: Ensure apt_query binaries are executable
+      - name: Build apt_query binaries
         run: | #shell
-          chmod +x apt_query-x86 apt_query-arm64 || true
+          cd src/cmd/apt_query
+          GOOS=linux GOARCH=amd64 go build -o ../../../apt_query-x86 .
+          GOOS=linux GOARCH=arm64 go build -o ../../../apt_query-arm64 .
+          chmod +x ../../../apt_query-x86 ../../../apt_query-arm64
 
       - name: Test action
         id: test-action
