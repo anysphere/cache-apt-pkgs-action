@@ -18,9 +18,9 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Build and test go binaries
+      - name: Build, lint, and test go binaries
         run: | #shell
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.2
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.52.2  # no external gh action deps
           $(go env GOPATH)/bin/golangci-lint run
           go build -v ./...
           go test -v ./...
