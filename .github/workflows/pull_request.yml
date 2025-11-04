@@ -82,7 +82,7 @@ jobs:
         with:
           packages: curl wget
           version: test-pr-${{ github.run_number }}
-          debug: 'true'
+          debug: 'false'
 
       - name: Verify cache behavior (second run)
         run: | #shell
@@ -170,7 +170,7 @@ jobs:
         with:
           use_aptfile: 'true'
           version: test-pr-aptfile-${{ github.run_number }}
-          debug: 'true'
+          debug: 'false'
 
       - name: Verify Aptfile cache behavior (second run)
         run: | #shell
@@ -241,7 +241,7 @@ jobs:
           packages: curl
           use_aptfile: 'true'
           version: test-pr-merge-${{ github.run_number }}
-          debug: 'true'
+          debug: 'false'
 
       - name: Verify merge cache behavior (second run)
         run: | #shell
