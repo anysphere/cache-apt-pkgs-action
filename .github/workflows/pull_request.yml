@@ -68,6 +68,42 @@ jobs:
           fi
           
           echo "✅ Action outputs verified successfully"
+          
+          # Store outputs for cache comparison
+          echo "FIRST_RUN_CACHE_HIT=${{ steps.test-action.outputs.cache-hit }}" >> $GITHUB_ENV
+          echo "FIRST_RUN_PACKAGE_LIST=${{ steps.test-action.outputs.package-version-list }}" >> $GITHUB_ENV
+
+      - name: Test action again (cache behavior test)
+        id: test-action-cache
+        uses: ./
+        with:
+          packages: curl wget
+          version: test-pr-${{ github.run_number }}
+          debug: 'true'
+
+      - name: Verify cache behavior for packages input
+        run: | #shell
+          echo "First run cache hit: ${FIRST_RUN_CACHE_HIT}"
+          echo "Second run cache hit: ${{ steps.test-action-cache.outputs.cache-hit }}"
+          echo "First run package list: ${FIRST_RUN_PACKAGE_LIST}"
+          echo "Second run package list: ${{ steps.test-action-cache.outputs.package-version-list }}"
+          
+          # On first run, cache-hit should be false (unless cache already exists from previous run)
+          # On second run, cache-hit MUST be true
+          if [ "${{ steps.test-action-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "❌ ERROR: Cache was not hit on second run. Expected cache-hit=true, got cache-hit=${{ steps.test-action-cache.outputs.cache-hit }}"
+            exit 1
+          fi
+          
+          # Verify outputs match between runs (ensures cache is working correctly)
+          if [ "${FIRST_RUN_PACKAGE_LIST}" != "${{ steps.test-action-cache.outputs.package-version-list }}" ]; then
+            echo "❌ ERROR: Package lists don't match between runs"
+            echo "First run:  ${FIRST_RUN_PACKAGE_LIST}"
+            echo "Second run: ${{ steps.test-action-cache.outputs.package-version-list }}"
+            exit 1
+          fi
+          
+          echo "✅ Cache behavior verified successfully for packages input"
 
       - name: Create Aptfile for testing
         run: | 
@@ -122,6 +158,41 @@ jobs:
           fi
           
           echo "✅ Aptfile functionality verified successfully"
+          
+          # Store outputs for cache comparison
+          echo "FIRST_RUN_APTFILE_CACHE_HIT=${{ steps.test-action-aptfile.outputs.cache-hit }}" >> $GITHUB_ENV
+          echo "FIRST_RUN_APTFILE_PACKAGE_LIST=${{ steps.test-action-aptfile.outputs.package-version-list }}" >> $GITHUB_ENV
+
+      - name: Test action with Aptfile again (cache behavior test)
+        id: test-action-aptfile-cache
+        uses: ./
+        with:
+          use_aptfile: 'true'
+          version: test-pr-aptfile-${{ github.run_number }}
+          debug: 'true'
+
+      - name: Verify cache behavior for Aptfile
+        run: | #shell
+          echo "First run cache hit: ${FIRST_RUN_APTFILE_CACHE_HIT}"
+          echo "Second run cache hit: ${{ steps.test-action-aptfile-cache.outputs.cache-hit }}"
+          echo "First run package list: ${FIRST_RUN_APTFILE_PACKAGE_LIST}"
+          echo "Second run package list: ${{ steps.test-action-aptfile-cache.outputs.package-version-list }}"
+          
+          # On second run, cache-hit MUST be true
+          if [ "${{ steps.test-action-aptfile-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "❌ ERROR: Cache was not hit on second run for Aptfile. Expected cache-hit=true, got cache-hit=${{ steps.test-action-aptfile-cache.outputs.cache-hit }}"
+            exit 1
+          fi
+          
+          # Verify outputs match between runs
+          if [ "${FIRST_RUN_APTFILE_PACKAGE_LIST}" != "${{ steps.test-action-aptfile-cache.outputs.package-version-list }}" ]; then
+            echo "❌ ERROR: Package lists don't match between runs for Aptfile"
+            echo "First run:  ${FIRST_RUN_APTFILE_PACKAGE_LIST}"
+            echo "Second run: ${{ steps.test-action-aptfile-cache.outputs.package-version-list }}"
+            exit 1
+          fi
+          
+          echo "✅ Cache behavior verified successfully for Aptfile"
 
       - name: Test action with Aptfile and packages input (merge)
         id: test-action-merge
@@ -158,6 +229,42 @@ jobs:
           fi
           
           echo "✅ Aptfile and packages merge verified successfully"
+          
+          # Store outputs for cache comparison
+          echo "FIRST_RUN_MERGE_CACHE_HIT=${{ steps.test-action-merge.outputs.cache-hit }}" >> $GITHUB_ENV
+          echo "FIRST_RUN_MERGE_PACKAGE_LIST=${{ steps.test-action-merge.outputs.package-version-list }}" >> $GITHUB_ENV
+
+      - name: Test action with Aptfile and packages input again (cache behavior test)
+        id: test-action-merge-cache
+        uses: ./
+        with:
+          packages: curl
+          use_aptfile: 'true'
+          version: test-pr-merge-${{ github.run_number }}
+          debug: 'true'
+
+      - name: Verify cache behavior for Aptfile and packages merge
+        run: | #shell
+          echo "First run cache hit: ${FIRST_RUN_MERGE_CACHE_HIT}"
+          echo "Second run cache hit: ${{ steps.test-action-merge-cache.outputs.cache-hit }}"
+          echo "First run package list: ${FIRST_RUN_MERGE_PACKAGE_LIST}"
+          echo "Second run package list: ${{ steps.test-action-merge-cache.outputs.package-version-list }}"
+          
+          # On second run, cache-hit MUST be true
+          if [ "${{ steps.test-action-merge-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "❌ ERROR: Cache was not hit on second run for merge. Expected cache-hit=true, got cache-hit=${{ steps.test-action-merge-cache.outputs.cache-hit }}"
+            exit 1
+          fi
+          
+          # Verify outputs match between runs
+          if [ "${FIRST_RUN_MERGE_PACKAGE_LIST}" != "${{ steps.test-action-merge-cache.outputs.package-version-list }}" ]; then
+            echo "❌ ERROR: Package lists don't match between runs for merge"
+            echo "First run:  ${FIRST_RUN_MERGE_PACKAGE_LIST}"
+            echo "Second run: ${{ steps.test-action-merge-cache.outputs.package-version-list }}"
+            exit 1
+          fi
+          
+          echo "✅ Cache behavior verified successfully for Aptfile and packages merge"
 
       - name: Cleanup Aptfile
         if: always()
