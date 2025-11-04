@@ -3,6 +3,9 @@ on:
   pull_request:
     types: [opened, synchronize]
   workflow_dispatch:
+  push:
+    branches:
+      - 'cursor/test-pull-request-cache-behavior-*'
 
 permissions:
   contents: read
