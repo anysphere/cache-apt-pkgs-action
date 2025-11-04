@@ -69,6 +69,12 @@ else
   combined_packages=""
 fi
 
+# Deduplicate packages after combining
+if test -n "${combined_packages}"; then
+  combined_packages="$(deduplicate_packages "${combined_packages}")"
+  log "Deduplicated packages: '${combined_packages}'"
+fi
+
 # Create cache directory so artifacts can be saved.
 mkdir -p "${cache_dir}"
 

@@ -124,8 +124,9 @@ function get_normalized_package_list {
   # Remove "Reverse=Provides: " prefix from strings if present
   local clean_result
   clean_result=$(echo "${result}" | sed 's/Reverse=Provides: //g')
-  echo "cleaned result: ${clean_result}"
-  echo "result: ${result}"
+  # Debug logging to stderr (won't interfere with return value captured via command substitution)
+  echo "cleaned result: ${clean_result}" >&2
+  echo "result: ${result}" >&2
   echo "${clean_result}"
 }
 
@@ -166,6 +167,24 @@ function validate_bool {
     log "${2} value '${1}' must be either true or false (case sensitive)."
     exit ${3}
   fi
+}
+
+###############################################################################
+# Deduplicates a space-delimited list of packages.
+# Arguments:
+#   Space delimited list of packages.
+# Returns:
+#   Space delimited list of unique packages (sorted).
+###############################################################################
+function deduplicate_packages {
+  local packages="${1}"
+  if test -z "${packages}"; then
+    echo ""
+    return
+  fi
+  
+  # Convert space-separated to newline-separated, sort unique, then convert back to space-separated
+  echo "${packages}" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//'
 }
 
 ###############################################################################

@@ -19,7 +19,7 @@ jobs:
           go-version-file: "go.mod"
 
       - name: Build and test
-        run: |
+        run: | #shell
           go build -v ./...
           go test -v ./...
 
@@ -27,3 +27,126 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.52.2
+
+      - name: Ensure apt_query binaries are executable
+        run: | #shell
+          chmod +x apt_query-x86 apt_query-arm64 || true
+
+      - name: Test action
+        id: test-action
+        uses: ./
+        with:
+          packages: curl wget
+          version: test-pr-${{ github.run_number }}
+          debug: 'true'
+
+      - name: Verify action outputs
+        run: | #shell
+          echo "Cache hit: ${{ steps.test-action.outputs.cache-hit }}"
+          echo "Package version list: ${{ steps.test-action.outputs.package-version-list }}"
+          echo "All package version list: ${{ steps.test-action.outputs.all-package-version-list }}"
+          
+          # Verify outputs are set (even if cache-hit is false on first run)
+          if [ -z "${{ steps.test-action.outputs.package-version-list }}" ]; then
+            echo "❌ ERROR: package-version-list output is empty"
+            exit 1
+          fi
+          
+          # Verify packages are in the output
+          if ! echo "${{ steps.test-action.outputs.package-version-list }}" | grep -q "curl"; then
+            echo "⚠️  WARNING: curl not found in package-version-list"
+          fi
+          
+          if ! echo "${{ steps.test-action.outputs.package-version-list }}" | grep -q "wget"; then
+            echo "⚠️  WARNING: wget not found in package-version-list"
+          fi
+          
+          echo "✅ Action outputs verified successfully"
+
+      - name: Create Aptfile for testing
+        run: | 
+          cat > Aptfile << 'EOF'
+          # Test packages from Aptfile
+          git
+          ca-certificates
+          # Another package
+          gnupg
+          EOF
+          echo "Created Aptfile with contents:"
+          cat Aptfile
+
+      - name: Test action with Aptfile
+        id: test-action-aptfile
+        uses: ./
+        with:
+          use_aptfile: 'true'
+          version: test-pr-aptfile-${{ github.run_number }}
+          debug: 'true'
+
+      - name: Verify Aptfile functionality
+        run: | #shell
+          echo "Cache hit: ${{ steps.test-action-aptfile.outputs.cache-hit }}"
+          echo "Package version list: ${{ steps.test-action-aptfile.outputs.package-version-list }}"
+          echo "All package version list: ${{ steps.test-action-aptfile.outputs.all-package-version-list }}"
+          
+          # Verify outputs are set
+          if [ -z "${{ steps.test-action-aptfile.outputs.package-version-list }}" ]; then
+            echo "❌ ERROR: package-version-list output is empty"
+            exit 1
+          fi
+          
+          # Verify packages from Aptfile are in the output
+          if ! echo "${{ steps.test-action-aptfile.outputs.package-version-list }}" | grep -q "git"; then
+            echo "❌ ERROR: git not found in package-version-list (from Aptfile)"
+            exit 1
+          fi
+          
+          if ! echo "${{ steps.test-action-aptfile.outputs.package-version-list }}" | grep -q "ca-certificates"; then
+            echo "❌ ERROR: ca-certificates not found in package-version-list (from Aptfile)"
+            exit 1
+          fi
+          
+          if ! echo "${{ steps.test-action-aptfile.outputs.package-version-list }}" | grep -q "gnupg"; then
+            echo "❌ ERROR: gnupg not found in package-version-list (from Aptfile)"
+            exit 1
+          fi
+          
+          echo "✅ Aptfile functionality verified successfully"
+
+      - name: Test action with Aptfile and packages input (merge)
+        id: test-action-merge
+        uses: ./
+        with:
+          packages: curl
+          use_aptfile: 'true'
+          version: test-pr-merge-${{ github.run_number }}
+          debug: 'true'
+
+      - name: Verify Aptfile and packages merge
+        run: | #shell
+          echo "Cache hit: ${{ steps.test-action-merge.outputs.cache-hit }}"
+          echo "Package version list: ${{ steps.test-action-merge.outputs.package-version-list }}"
+          
+          # Verify outputs are set
+          if [ -z "${{ steps.test-action-merge.outputs.package-version-list }}" ]; then
+            echo "❌ ERROR: package-version-list output is empty"
+            exit 1
+          fi
+          
+          # Verify packages from both sources are in the output
+          if ! echo "${{ steps.test-action-merge.outputs.package-version-list }}" | grep -q "curl"; then
+            echo "❌ ERROR: curl not found in package-version-list (from packages input)"
+            exit 1
+          fi
+          
+          if ! echo "${{ steps.test-action-merge.outputs.package-version-list }}" | grep -q "git"; then
+            echo "❌ ERROR: git not found in package-version-list (from Aptfile)"
+            exit 1
+          fi
+          
+          echo "✅ Aptfile and packages merge verified successfully"
+
+      - name: Cleanup Aptfile
+        if: always()
+        run: | #shell
+          rm -f Aptfile
