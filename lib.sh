@@ -115,25 +115,19 @@ function get_normalized_package_list {
   local architecture
   architecture=$(dpkg --print-architecture)
   local result
-  local temp_file
-  temp_file=$(mktemp)
-  
 
+  #IMPORTANT: we rely on a list style input to the apt_query binary with ${packages}, do remove this lint disable!
   if [ "${architecture}" == "arm64" ]; then
-    # shellcheck disable=SC2086 we rely on a list style input
-    "${script_dir}/apt_query-arm64" normalized-list ${packages} > "${temp_file}" 2>&1
+    # shellcheck disable=SC2086
+    result=$("${script_dir}/apt_query-arm64" normalized-list ${packages} 2>&1)
   else
-    # shellcheck disable=SC2086  we rely on a list style input
-    "${script_dir}/apt_query-x86" normalized-list ${packages} > "${temp_file}" 2>&1
+    # shellcheck disable=SC2086
+    result=$("${script_dir}/apt_query-x86" normalized-list ${packages} 2>&1)
   fi
   
-  local exit_code=$?
-  result=$(cat "${temp_file}")
-  rm -f "${temp_file}"
-  
   # Check if the command failed or if output looks like an error message
-  if [ ${exit_code} -ne 0 ] || [ -z "${result}" ] || echo "${result}" | grep -qiE "^exit status|^error|^fatal|^unable"; then
-    echo "apt_query failed with exit code ${exit_code}" >&2
+  if [ -z "${result}" ] || echo "${result}" | grep -qiE "^exit status|^error|^fatal|^unable"; then
+    echo "apt_query failed" >&2
     echo "Output: ${result}" >&2
     # Return empty string to indicate failure
     echo ""
@@ -142,7 +136,7 @@ function get_normalized_package_list {
     
   # Remove "Reverse=Provides: " prefix from strings if present
   local clean_result
-  clean_result=$(echo "${result}" | sed 's/Reverse=Provides: //g')
+  clean_result="${result//Reverse=Provides: /}"
   
   # Debug logging to stderr (won't interfere with return value captured via command substitution)
   if [[ "${-}" == *x* ]] || [ "${DEBUG:-${debug}}" = "true" ]; then

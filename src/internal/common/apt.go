@@ -33,10 +33,7 @@ func isErrLine(line string) bool {
 
 // Resolves virtual packages names to their concrete one.
 func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage, err error) {
-	// Use grep with -A to get the line after "Reverse Provides", then filter out the header line itself
-	// The -v flag filters out lines containing "Reverse Provides" to exclude the header
-	// Then use tail -1 to get the last (first non-header) line, matching original behavior
-	execution := executor.Exec("bash", "-c", fmt.Sprintf("apt-cache showpkg %s | grep -A 1 \"Reverse Provides\" | grep -v \"Reverse Provides\" | tail -1", name))
+	execution := executor.Exec("bash", "-c", fmt.Sprintf("apt-cache showpkg %s | grep -A 1 \"Reverse Provides\" | tail -1", name))
 	err = execution.Error()
 	if err != nil {
 		logging.Fatal(err)
@@ -45,25 +42,11 @@ func getNonVirtualPackage(executor exec.Executor, name string) (pkg *AptPackage,
 	if isErrLine(execution.CombinedOut) {
 		return pkg, execution.Error()
 	}
-	// Trim whitespace and handle the output
-	output := strings.TrimSpace(execution.CombinedOut)
-	if output == "" {
-		return pkg, fmt.Errorf("empty output from apt-cache showpkg for virtual package '%s'", name)
-	}
-	// Skip if the output is the header line "Reverse Provides:" itself (defensive check)
-	if strings.HasPrefix(output, "Reverse Provides") {
-		return pkg, fmt.Errorf("unable to find concrete package for virtual package '%s'. Output was header line: %s", name, output)
-	}
-	splitLine := GetSplitLine(output, " ", 3)
+	splitLine := GetSplitLine(execution.CombinedOut, " ", 3)
 	if len(splitLine.Words) < 2 {
 		return pkg, fmt.Errorf("unable to parse space delimited line's package name and version from apt-cache showpkg output below:\n%s", execution.CombinedOut)
 	}
-	// Validate that we got a valid package name (not "Reverse" or "Provides")
-	packageName := splitLine.Words[0]
-	if packageName == "Reverse" || packageName == "Provides" || strings.HasPrefix(packageName, "Reverse") {
-		return pkg, fmt.Errorf("unable to parse valid package name from apt-cache showpkg output for virtual package '%s'. Output: %s", name, output)
-	}
-	return &AptPackage{Name: packageName, Version: splitLine.Words[1]}, nil
+	return &AptPackage{Name: splitLine.Words[0], Version: splitLine.Words[1]}, nil
 }
 
 func getPackage(executor exec.Executor, paragraph string) (pkg *AptPackage, err error) {

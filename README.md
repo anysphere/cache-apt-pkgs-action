@@ -32,7 +32,7 @@ There are three kinds of version labels you can use.
 
 ### Inputs
 
-- `packages` - Space delimited list of packages to install. If not provided, packages will be read from `Aptfile` at the repository root if it exists. Packages from both the input and `Aptfile` will be merged if both are provided.
+- `packages` - Space delimited list of packages to install. If not provided, packages will be read from `Aptfile` at the repository root if it exists and `use_aptfile` is true. Packages from both the input and `Aptfile` will be merged if both are provided.
 - `version` - Version of cache to load. Each version will have its own cache. Note, all characters except spaces are allowed.
 - `execute_install_scripts` - Execute Debian package pre and post install script upon restore. See [Caveats / Non-file Dependencies](#non-file-dependencies) for more information.
 - `empty_packages_behavior` - Desired behavior when the given `packages` is empty. `'error'` (default), `'warn'` or `'ignore'`.
