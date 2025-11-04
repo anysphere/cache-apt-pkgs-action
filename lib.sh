@@ -115,23 +115,38 @@ function get_normalized_package_list {
   local architecture
   architecture=$(dpkg --print-architecture)
   local result
+  local temp_file
+  temp_file=$(mktemp)
+  
   if [ "${architecture}" == "arm64" ]; then
-    result=$("${script_dir}/apt_query-arm64" normalized-list "${packages}" 2>&1)
+    "${script_dir}/apt_query-arm64" normalized-list "${packages}" > "${temp_file}" 2>&1
   else
-    result=$("${script_dir}/apt_query-x86" normalized-list "${packages}" 2>&1)
+    "${script_dir}/apt_query-x86" normalized-list "${packages}" > "${temp_file}" 2>&1
   fi
   
-  # Check for errors in output
-  if [ -z "${result}" ] || echo "${result}" | grep -qiE "error|fatal|unable"; then
-    echo "apt_query failed with output: ${result}" >&2
-  fi
+  local exit_code=$?
+  result=$(cat "${temp_file}")
+  rm -f "${temp_file}"
   
-  echo "original apt-query result: '${result}'" >&2
+  # Check if the command failed or if output looks like an error message
+  if [ ${exit_code} -ne 0 ] || [ -z "${result}" ] || echo "${result}" | grep -qiE "^exit status|^error|^fatal|^unable"; then
+    echo "apt_query failed with exit code ${exit_code}" >&2
+    echo "Output: ${result}" >&2
+    # Return empty string to indicate failure
+    echo ""
+    return 1
+  fi
+    
   # Remove "Reverse=Provides: " prefix from strings if present
   local clean_result
   clean_result=$(echo "${result}" | sed 's/Reverse=Provides: //g')
+  
   # Debug logging to stderr (won't interfere with return value captured via command substitution)
-  echo "cleaned apt-query result: '${clean_result}'" >&2
+  if [[ "${-}" == *x* ]] || [ "${DEBUG:-${debug}}" = "true" ]; then
+    echo "packages after sed: '${packages}'" >&2
+    echo "original apt-query result: '${result}'" >&2
+    echo "cleaned apt-query result: '${clean_result}'" >&2
+  fi
   
   echo "${clean_result}"
 }

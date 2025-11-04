@@ -109,6 +109,13 @@ log "Normalizing package list..."
 packages="$(get_normalized_package_list "${combined_packages}")"
 log "normalized packages: '${packages}'"
 
+# Check if normalization failed (empty result means failure)
+if [ -z "${packages}" ]; then
+  log "aborted"
+  log "Failed to normalize package list. The apt_query binary may have failed or the packages may be invalid." >&2
+  exit 4
+fi
+
 validate_bool "${execute_install_scripts}" execute_install_scripts 4
 
 # Basic validation for repository parameter
