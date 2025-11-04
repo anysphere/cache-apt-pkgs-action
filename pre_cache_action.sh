@@ -10,7 +10,7 @@ source "${script_dir}/lib.sh"
 # Setup first before other operations.
 debug="${4}"
 validate_bool "${debug}" debug 1
-test ${debug} == "true" && set -x
+test "${debug}" == "true" && set -x
 
 # Directory that holds the cached packages.
 cache_dir="${1}"
@@ -32,7 +32,7 @@ use_aptfile="${6}"
 validate_bool "${use_aptfile}" use_aptfile 5
 
 # List of the packages to use.
-input_packages="${@:7}"
+input_packages="${*:7}"
 
 # Check for Aptfile at repository root and merge with input packages
 aptfile_path="${GITHUB_WORKSPACE:-.}/Aptfile"
@@ -70,7 +70,7 @@ else
 fi
 
 # Create cache directory so artifacts can be saved.
-mkdir -p ${cache_dir}
+mkdir -p "${cache_dir}"
 
 log "Validating action arguments (version='${version}', packages='${combined_packages}')...";
 if grep -q " " <<< "${version}"; then
@@ -101,7 +101,7 @@ fi
 # Trim commas, excess spaces, and sort.
 log "Normalizing package list..."
 packages="$(get_normalized_package_list "${combined_packages}")"
-log "done"
+log "normalized packages: '${packages}'"
 
 validate_bool "${execute_install_scripts}" execute_install_scripts 4
 
@@ -117,10 +117,10 @@ if [ -n "${add_repository}" ]; then
       exit 6
     fi
   done
-  log "done"
+  log "done validating repository parameter"
 fi
 
-log "done"
+log "done validating action arguments"
 
 log_empty_line
 
