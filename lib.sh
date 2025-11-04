@@ -105,17 +105,24 @@ function get_normalized_package_list {
   # Remove commas, and block scalar folded backslashes,
   # extraneous spaces at the middle, beginning and end
   # then sort.
-  local packages=$(echo "${1}" \
+  local packages
+  packages=$(echo "${1}" \
     | sed 's/[,\]/ /g; s/\s\+/ /g; s/^\s\+//g; s/\s\+$//g' \
     | sort -t' ')
-  local script_dir="$(dirname -- "$(realpath -- "${0}")")"
+  local script_dir
+  script_dir="$(dirname -- "$(realpath -- "${0}")")"
 
-  local architecture=$(dpkg --print-architecture)
+  local architecture
+  architecture=$(dpkg --print-architecture)
+  local result
   if [ "${architecture}" == "arm64" ]; then
-    ${script_dir}/apt_query-arm64 normalized-list ${packages}
+    result=$("${script_dir}/apt_query-arm64" normalized-list "${packages}")
   else
-    ${script_dir}/apt_query-x86 normalized-list ${packages}
+    result=$("${script_dir}/apt_query-x86" normalized-list "${packages}")
   fi
+  
+  # Remove "Reverse=Provides: " prefix from strings if present
+  echo "${result//Reverse=Provides: /}"
 }
 
 ###############################################################################
