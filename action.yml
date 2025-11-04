@@ -61,7 +61,7 @@ runs:
   using: "composite"
   steps:
     - id: pre-cache
-      run: |
+      run: | #shell
         ${GITHUB_ACTION_PATH}/pre_cache_action.sh \
           ~/cache-apt-pkgs \
           "$VERSION" \
@@ -94,7 +94,7 @@ runs:
 
     - id: post-cache
       if: ${{ env.CACHE_KEY }}
-      run: |
+      run: | #shell
         ${GITHUB_ACTION_PATH}/post_cache_action.sh \
           ~/cache-apt-pkgs \
           / \
@@ -103,7 +103,15 @@ runs:
           "$DEBUG" \
           "$ADD_REPOSITORY" \
           "$PACKAGES"
-        function create_list { local list=$(cat ~/cache-apt-pkgs/manifest_${1}.log | tr '\n' ','); echo ${list:0:-1}; };
+        function create_list { 
+          local manifest_file=~/cache-apt-pkgs/manifest_${1}.log
+          if [ -f "${manifest_file}" ]; then
+            local list=$(cat "${manifest_file}" | tr '\n' ',')
+            echo ${list:0:-1}
+          else
+            echo ""
+          fi
+        };
         echo "package-version-list=$(create_list main)" >> $GITHUB_OUTPUT
         echo "all-package-version-list=$(create_list all)" >> $GITHUB_OUTPUT
       shell: bash
@@ -129,6 +137,6 @@ runs:
         key: ${{ steps.load-cache.outputs.cache-primary-key }}
 
     - id: clean-cache
-      run: |
+      run: | #shell
         rm -rf ~/cache-apt-pkgs
       shell: bash
