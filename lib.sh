@@ -116,7 +116,7 @@ function get_normalized_package_list {
   architecture=$(dpkg --print-architecture)
   local result
 
-  #IMPORTANT: we rely on a list style input to the apt_query binary with ${packages}, do remove this lint disable!
+  # IMPORTANT: we rely on a list style input to the apt_query binary with ${packages}, do remove this lint disable!
   if [ "${architecture}" == "arm64" ]; then
     # shellcheck disable=SC2086
     result=$("${script_dir}/apt_query-arm64" normalized-list ${packages} 2>&1)
@@ -134,11 +134,11 @@ function get_normalized_package_list {
     return 1
   fi
     
-  # Remove "Reverse=Provides: " prefix from strings if present
+  # WORKAROUND: Remove "Reverse=Provides: " prefix from strings if present, 
+  # the go binary can return this prefix sometimes and it messes a bunch of things up.
   local clean_result
   clean_result="${result//Reverse=Provides: /}"
   
-  # Debug logging to stderr (won't interfere with return value captured via command substitution)
   if [[ "${-}" == *x* ]] || [ "${DEBUG:-${debug}}" = "true" ]; then
     echo "packages after sed: '${packages}'" >&2
     echo "original apt-query result: '${result}'" >&2

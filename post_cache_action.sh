@@ -49,7 +49,9 @@ fi
 if test "${cache_hit}" = "true"; then
   "${script_dir}/restore_pkgs.sh" "${cache_dir}" "${cache_restore_root}" "${execute_install_scripts}" "${debug}"
 else
-  "${script_dir}/install_and_cache_pkgs.sh" "${cache_dir}" "${debug}" "${add_repository}" "${packages}"
+  # shellcheck disable=SC2086
+  # INTENTIONAL: packages must be unquoted to expand into separate arguments for install_and_cache_pkgs.sh
+  "${script_dir}/install_and_cache_pkgs.sh" "${cache_dir}" "${debug}" "${add_repository}" ${packages}
 fi
 
 log_empty_line
