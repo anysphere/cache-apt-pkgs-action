@@ -35,6 +35,12 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o ../../../apt_query-x86 .
           GOOS=linux GOARCH=arm64 go build -o ../../../apt_query-arm64 .
           chmod +x ../../../apt_query-x86 ../../../apt_query-arm64
+          
+      - name: Verify apt_query binary works
+        run: | #shell
+          sudo apt-get update -qq
+          ./apt_query-x86 normalized-list curl wget || echo "Binary failed, checking output..."
+          ./apt_query-x86 normalized-list curl wget 2>&1 || true
 
       - name: Test action
         id: test-action

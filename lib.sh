@@ -116,17 +116,23 @@ function get_normalized_package_list {
   architecture=$(dpkg --print-architecture)
   local result
   if [ "${architecture}" == "arm64" ]; then
-    result=$("${script_dir}/apt_query-arm64" normalized-list "${packages}")
+    result=$("${script_dir}/apt_query-arm64" normalized-list "${packages}" 2>&1)
   else
-    result=$("${script_dir}/apt_query-x86" normalized-list "${packages}")
+    result=$("${script_dir}/apt_query-x86" normalized-list "${packages}" 2>&1)
   fi
   
+  # Check for errors in output
+  if [ -z "${result}" ] || echo "${result}" | grep -qiE "error|fatal|unable"; then
+    echo "apt_query failed with output: ${result}" >&2
+  fi
+  
+  echo "original apt-query result: '${result}'" >&2
   # Remove "Reverse=Provides: " prefix from strings if present
   local clean_result
   clean_result=$(echo "${result}" | sed 's/Reverse=Provides: //g')
   # Debug logging to stderr (won't interfere with return value captured via command substitution)
-  echo "cleaned result: ${clean_result}" >&2
-  echo "result: ${result}" >&2
+  echo "cleaned apt-query result: '${clean_result}'" >&2
+  
   echo "${clean_result}"
 }
 
