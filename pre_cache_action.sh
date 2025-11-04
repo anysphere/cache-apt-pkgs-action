@@ -93,12 +93,20 @@ if test -z "${combined_packages}"; then
       exit 0
       ;;
     warn)
-      echo "::warning::Packages argument is empty. Please provide packages via the 'packages' input or create an Aptfile at the repository root."
+      if test "${use_aptfile}" = "true"; then
+        echo "::warning::Packages argument is empty. Please provide packages via the 'packages' input or create an Aptfile at the repository root."
+      else
+        echo "::warning::Packages argument is empty. Please provide packages via the 'packages' input."
+      fi
       exit 0
       ;;
     *)
       log "aborted"
-      log "Packages argument cannot be empty. Please provide packages via the 'packages' input or create an Aptfile at the repository root." >&2
+      if test "${use_aptfile}" = "true"; then
+        log "Packages argument cannot be empty. Please provide packages via the 'packages' input or create an Aptfile at the repository root." >&2
+      else
+        log "Packages argument cannot be empty. Please provide packages via the 'packages' input." >&2
+      fi
       exit 3
       ;;
   esac
