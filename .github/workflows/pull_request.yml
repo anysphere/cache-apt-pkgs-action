@@ -105,19 +105,23 @@ jobs:
             exit 1
           fi
           
-          # Verify packages from Aptfile are in the output
-          if ! echo "${{ steps.test-action-aptfile.outputs.package-version-list }}" | grep -q "git"; then
+          # Verify packages from Aptfile are in the output (format is package=version, comma-separated)
+          package_list="${{ steps.test-action-aptfile.outputs.package-version-list }}"
+          if ! echo "${package_list}" | grep -qE "(^|,)git="; then
             echo "❌ ERROR: git not found in package-version-list (from Aptfile)"
+            echo "Package list: ${package_list}"
             exit 1
           fi
           
-          if ! echo "${{ steps.test-action-aptfile.outputs.package-version-list }}" | grep -q "ca-certificates"; then
+          if ! echo "${package_list}" | grep -qE "(^|,)ca-certificates="; then
             echo "❌ ERROR: ca-certificates not found in package-version-list (from Aptfile)"
+            echo "Package list: ${package_list}"
             exit 1
           fi
           
-          if ! echo "${{ steps.test-action-aptfile.outputs.package-version-list }}" | grep -q "gnupg"; then
+          if ! echo "${package_list}" | grep -qE "(^|,)gnupg="; then
             echo "❌ ERROR: gnupg not found in package-version-list (from Aptfile)"
+            echo "Package list: ${package_list}"
             exit 1
           fi
           
@@ -143,14 +147,17 @@ jobs:
             exit 1
           fi
           
-          # Verify packages from both sources are in the output
-          if ! echo "${{ steps.test-action-merge.outputs.package-version-list }}" | grep -q "curl"; then
+          # Verify packages from both sources are in the output (format is package=version, comma-separated)
+          package_list="${{ steps.test-action-merge.outputs.package-version-list }}"
+          if ! echo "${package_list}" | grep -qE "(^|,)curl="; then
             echo "❌ ERROR: curl not found in package-version-list (from packages input)"
+            echo "Package list: ${package_list}"
             exit 1
           fi
           
-          if ! echo "${{ steps.test-action-merge.outputs.package-version-list }}" | grep -q "git"; then
+          if ! echo "${package_list}" | grep -qE "(^|,)git="; then
             echo "❌ ERROR: git not found in package-version-list (from Aptfile)"
+            echo "Package list: ${package_list}"
             exit 1
           fi
           
