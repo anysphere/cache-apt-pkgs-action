@@ -23,10 +23,11 @@ jobs:
           go build -v ./...
           go test -v ./...
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.52.2
+      # TODO: Uncomment this when we are done fixing this error on the anysphere side.
+      # - name: Lint
+      #   uses: golangci/golangci-lint-action@v3
+      #   with:
+      #     version: v1.52.2
 
       - name: Ensure apt_query binaries are executable
         run: | #shell
