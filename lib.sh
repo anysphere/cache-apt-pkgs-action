@@ -122,7 +122,11 @@ function get_normalized_package_list {
   fi
   
   # Remove "Reverse=Provides: " prefix from strings if present
-  echo "${result//Reverse=Provides: /}"
+  local clean_result
+  clean_result=$(echo "${result}" | sed 's/Reverse=Provides: //g')
+  echo "cleaned result: ${clean_result}"
+  echo "result: ${result}"
+  echo "${clean_result}"
 }
 
 ###############################################################################
