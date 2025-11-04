@@ -104,10 +104,14 @@ runs:
           "$ADD_REPOSITORY" \
           "$PACKAGES"
         function create_list { 
-          local manifest_file=~/cache-apt-pkgs/manifest_${1}.log
+          local manifest_file="${HOME}/cache-apt-pkgs/manifest_${1}.log"
           if [ -f "${manifest_file}" ]; then
             local list=$(cat "${manifest_file}" | tr '\n' ',')
-            echo ${list:0:-1}
+            if [ ${#list} -gt 0 ]; then
+              echo ${list:0:-1}
+            else
+              echo ""
+            fi
           else
             echo ""
           fi

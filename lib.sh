@@ -224,6 +224,8 @@ function parse_aptfile {
 function write_manifest {  
   if [ ${#2} -eq 0 ]; then 
     log "Skipped ${1} manifest write. No packages to install."
+    # Create empty file to ensure outputs are always set
+    touch "${3}"
   else
     log "Writing ${1} packages manifest to ${3}..."
     # Remove trailing comma if present, delimit by newline and sort.
