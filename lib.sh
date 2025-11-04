@@ -118,10 +118,13 @@ function get_normalized_package_list {
   local temp_file
   temp_file=$(mktemp)
   
+
   if [ "${architecture}" == "arm64" ]; then
-    "${script_dir}/apt_query-arm64" normalized-list "${packages}" > "${temp_file}" 2>&1
+    # shellcheck disable=SC2086 we rely on a list style input
+    "${script_dir}/apt_query-arm64" normalized-list ${packages} > "${temp_file}" 2>&1
   else
-    "${script_dir}/apt_query-x86" normalized-list "${packages}" > "${temp_file}" 2>&1
+    # shellcheck disable=SC2086  we rely on a list style input
+    "${script_dir}/apt_query-x86" normalized-list ${packages} > "${temp_file}" 2>&1
   fi
   
   local exit_code=$?
